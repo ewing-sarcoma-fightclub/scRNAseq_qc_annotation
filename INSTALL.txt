@@ -1,0 +1,34 @@
+Ewing Sarcoma scRNA-seq Pipeline - Quick Install
+
+1) Get the code
+   git clone <repo_url>
+   cd pipeline
+
+2) Install micromamba (recommended) or conda/mamba.
+   Then create environments:
+   micromamba create -n ewing-scrna-py -f env/envs/python.lock.yml
+   micromamba create -n ewing-scrna-r  -f env/envs/r.lock.yml
+
+3) Install required R GitHub packages (inside R env):
+   micromamba activate ewing-scrna-r
+   Rscript -e "if (!requireNamespace('remotes', quietly=TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder'); remotes::install_github('powellgenomicslab/DropletQC')"
+
+4) Create local config:
+   cp env/config.env env/config.local.env
+   Edit env/config.local.env:
+     - FASTQ_ROOT (if using FASTQs)
+     - AMBIQUANT_REPO (optional but recommended to track ambient contamination)
+     - PYTHON_BIN / R_BIN (paths to env binaries)
+     - If no BAMs: SEURAT_FINAL_REQUIRE_DROPLETQC=false
+
+5) Run
+   Full run with Cell Ranger:
+     ./bin/run_all.sh
+
+   Matrix-only inputs (no FASTQs and BAMs):
+     ./bin/prepare_geo_primary.sh --clean
+     ./bin/run_all.sh --skip-cellranger --cellranger-root ./outputs/cellranger --qc-out ./outputs/qc --config ./env/config.local.env
+
+Notes:
+- Cell Ranger is proprietary and must be installed separately.
+- Outputs are written under ./outputs/

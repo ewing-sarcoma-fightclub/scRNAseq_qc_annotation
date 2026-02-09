@@ -1,0 +1,22 @@
+name: ewing-scrna-r
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base=4.4
+  - compilers
+  - r-ggplot2
+  - r-matrix
+  - r-seurat
+  - r-seurat-data
+  - r-azimuth
+  - r-readxl
+  - r-soupx
+  - r-remotes
+  - bioconductor-dropletutils
+  - bioconductor-glmgampoi
+  - r-hgnchelper
+  - samtools
+  # GitHub-only R packages installed via remotes:
+  #   - DoubletFinder
+  #   - DropletQC

@@ -1,0 +1,123 @@
+#!/bin/bash
+set -euo pipefail
+
+# Cell Ranger pipeline
+# - Downloads the 10x GRCh38-2024-A reference
+# - Runs `cellranger count` on each per-sample FASTQ directory
+
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+PIPELINE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+CONFIG_FILE="${PIPELINE_ROOT}/env/config.env"
+OUT_ROOT=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --config)
+      CONFIG_FILE="$2"
+      shift 2
+      ;;
+    --out-root)
+      OUT_ROOT="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -f "${CONFIG_FILE}" ]]; then
+  CONFIG_FILE="$(cd -- "$(dirname -- "${CONFIG_FILE}")" && pwd)/$(basename -- "${CONFIG_FILE}")"
+fi
+if [[ -f "${CONFIG_FILE}" ]]; then
+  # shellcheck source=/dev/null
+  source "${CONFIG_FILE}"
+else
+  echo "[WARN] Config file not found: ${CONFIG_FILE} (using defaults)" >&2
+fi
+
+# ====== CONFIG ======
+# Root directory containing one subdirectory per sample, each with FASTQs inside
+FASTQ_ROOT="${FASTQ_ROOT:-}"
+
+# Where to store the reference
+REF_ROOT="${CELLRANGER_REF_ROOT:-"${PIPELINE_ROOT}/outputs/refdata"}"
+REF_TGZ="${REF_ROOT}/refdata-gex-GRCh38-2024-A.tar.gz"
+REF_DIR="${REF_ROOT}/refdata-gex-GRCh38-2024-A"
+REF_TGZ_SHA256="${REF_TGZ_SHA256:-}"
+
+# Cell Ranger resources
+LOCAL_CORES="${CELLRANGER_CORES:-10}"
+LOCAL_MEM="${CELLRANGER_MEM_GB:-80}"
+INCLUDE_INTRONS="${CELLRANGER_INCLUDE_INTRONS:-true}"
+
+# Output root (each sample will create ${OUT_ROOT}/${sample_name})
+OUT_ROOT="${OUT_ROOT:-${CELLRANGER_OUT_ROOT:-"${PIPELINE_ROOT}/outputs/cellranger"}}"
+
+CELLRANGER_BIN="${CELLRANGER_BIN:-cellranger}"
+
+# ====== REFERENCE DOWNLOAD ======
+mkdir -p "${REF_ROOT}"
+verify_sha256() {
+  local file="$1"
+  local expected="$2"
+  if [[ -z "${expected}" ]]; then
+    return 0
+  fi
+  if command -v sha256sum >/dev/null 2>&1; then
+    echo "${expected}  ${file}" | sha256sum -c - >/dev/null 2>&1
+    return $?
+  elif command -v shasum >/dev/null 2>&1; then
+    local actual
+    actual="$(shasum -a 256 "${file}" | awk '{print $1}')"
+    [[ "${actual}" == "${expected}" ]]
+    return $?
+  else
+    echo "[WARN] sha256sum/shasum not available; skipping checksum verification." >&2
+    return 0
+  fi
+}
+if [[ ! -d "${REF_DIR}" ]]; then
+  if [[ ! -f "${REF_TGZ}" ]]; then
+    wget "https://cf.10xgenomics.com/supp/cell-exp/refdata-gex-GRCh38-2024-A.tar.gz" -O "${REF_TGZ}"
+  fi
+  if ! verify_sha256 "${REF_TGZ}" "${REF_TGZ_SHA256}"; then
+    echo "[ERROR] Reference tarball checksum mismatch: ${REF_TGZ}" >&2
+    exit 1
+  fi
+  tar -xzf "${REF_TGZ}" -C "${REF_ROOT}"
+fi
+
+# ====== RUN CELLRANGER ======
+if [[ -z "${FASTQ_ROOT}" || ! -d "${FASTQ_ROOT}" ]]; then
+  echo "FASTQ_ROOT does not exist: ${FASTQ_ROOT}" >&2
+  exit 1
+fi
+
+mkdir -p "${OUT_ROOT}"
+while IFS= read -r -d '' sample_dir; do
+  sample_name="$(basename "${sample_dir}")"
+  sample_out="${OUT_ROOT}/${sample_name}"
+
+  # Each directory contains FASTQs for a single sample, so --sample is not required.
+  if [[ -d "${sample_out}/outs/filtered_feature_bc_matrix" && -d "${sample_out}/outs/raw_feature_bc_matrix" && -f "${sample_out}/outs/metrics_summary.csv" ]]; then
+    echo "[INFO] Skipping Cell Ranger (resume): ${sample_out}/outs already present" >&2
+    continue
+  fi
+
+  (
+    cd "${OUT_ROOT}"
+    "${CELLRANGER_BIN}" count \
+      --id="${sample_name}" \
+      --transcriptome="${REF_DIR}" \
+      --fastqs="${sample_dir}" \
+      --include-introns="${INCLUDE_INTRONS}" \
+      --create-bam true \
+      --localcores="${LOCAL_CORES}" \
+      --localmem="${LOCAL_MEM}"
+  )
+
+done < <(find "${FASTQ_ROOT}" -mindepth 1 -maxdepth 1 -type d -print0)
+
+echo "Done."

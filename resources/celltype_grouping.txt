@@ -1,0 +1,160 @@
+# Cell type grouping rules (generated)
+#
+# Sources used to define Azimuth label strings:
+# - azimuth_label_catalog.txt (generated from installed references)
+#
+# Format per group:
+# group: <GROUP_ID>
+# azimuth_refs: comma-separated references
+# azimuth_label_patterns: comma-separated substrings (case-insensitive)
+# cellmarker_name_patterns: comma-separated substrings (case-insensitive)
+# lineage: coarse lineage label (used for final assignment)
+# notes: free text
+
+group: immune_t_cell
+azimuth_refs: pbmcref, bonemarrowref, lungref, adiposeref, fetusref, liverref
+azimuth_label_patterns: CD4 T, CD8 T, CD4 CTL, CD4 Naive, CD4 Proliferating, CD4 TCM, CD4 TEM, CD8 Naive, CD8 Proliferating, CD8 TCM, CD8 TEM, Treg, Treg Memory, Treg Naive, MAIT, gdT, dnT, T Proliferating, CD4 Effector, CD4 Memory, CD8 Effector, CD8 Memory, T cell lineage, CD4 T cells, CD8 T cells, T cells proliferating, hTcell, hTreg, Thymocytes
+cellmarker_name_patterns: T cell, CD4, CD8, Treg, MAIT, gamma delta, cytotoxic T, naive T, memory T, TEMRA, TRM, effector T, proliferative T, Thymocyte
+lineage: T cell
+notes: Uses pbmcref/bonemarrowref celltype.l1/l2/l3 and lungref ann_level_3/4 for T labels.
+
+group: immune_b_cell
+azimuth_refs: pbmcref, bonemarrowref, lungref, adiposeref, liverref
+azimuth_label_patterns: B naive, B memory, B intermediate, B naive kappa, B naive lambda, B memory kappa, B memory lambda, B intermediate kappa, B intermediate lambda, Naive B, Memory B, pre B, pro B, transitional B, B cell lineage, B cells, hBcell
+cellmarker_name_patterns: B cell, memory B, naive B, germinal center B, pre-B, pro-B, immature B, transitional B
+lineage: B cell
+notes: Matches pbmcref/bonemarrowref B lineages and lungref B cell lineage.
+
+group: immune_plasma_cell
+azimuth_refs: pbmcref, bonemarrowref, lungref, adiposeref, liverref
+azimuth_label_patterns: Plasma, Plasmablast, Plasma cells, Plasmablast, hPlasmablast
+cellmarker_name_patterns: plasma cell, plasmablast, antibody secreting
+lineage: Plasma cell
+notes: Separate from B lineage.
+
+group: immune_nk_ilc
+azimuth_refs: pbmcref, bonemarrowref, lungref, adiposeref, liverref
+azimuth_label_patterns: NK, NK Proliferating, NK_CD56bright, NK CD56+, ILC, Innate lymphoid cell NK, NK cells, hNK
+cellmarker_name_patterns: NK, natural killer, NKT, ILC
+lineage: NK/ILC
+notes: Includes ILC and NK variants.
+
+group: immune_myeloid_monocyte_macrophage
+azimuth_refs: pbmcref, bonemarrowref, lungref, adiposeref, fetusref, liverref
+azimuth_label_patterns: Mono, CD14 Mono, CD16 Mono, Monocytes, Macrophages, Macrophage, Alveolar macrophages, Interstitial macrophages, Monocyte-derived Mφ, Myeloid, Myeloid cells, hMono1, hMono2, hMac1, hMac2, hMac3
+cellmarker_name_patterns: monocyte, macrophage, myeloid
+lineage: Myeloid
+notes: Broad mono/macrophage compartment.
+
+group: immune_dendritic
+azimuth_refs: pbmcref, bonemarrowref, lungref, adiposeref, fetusref, liverref
+azimuth_label_patterns: cDC1, cDC2, pDC, ASDC, Dendritic, Dendritic cells, DC1, DC2, Migratory DCs, Plasmacytoid DCs, pre-mDC, pre-pDC, hcDC1, hcDC2, hmDC, hpDC
+cellmarker_name_patterns: dendritic, cDC, pDC
+lineage: Dendritic
+notes: DCs across blood/bone/lung/adipose/fetus.
+
+group: immune_granulocyte_mast
+azimuth_refs: bonemarrowref, lungref, adiposeref, liverref
+azimuth_label_patterns: BaEoMa, Neutrophil, hNeu, Mast, Mast cells, hMast
+cellmarker_name_patterns: neutrophil, granulocyte, basophil, mast
+lineage: Granulocyte/Mast
+notes: BaEoMa = basophil/eosinophil/mast in bonemarrowref.
+
+group: immune_erythroid_megakaryocyte
+azimuth_refs: pbmcref, bonemarrowref, fetusref, lungref, liverref
+azimuth_label_patterns: Eryth, Early Eryth, Late Eryth, Erythroblasts, Platelet, Platelet, Prog Mk, Megakaryocytes, Lung-Megakaryocytes
+cellmarker_name_patterns: erythroid, red blood cell, megakaryocyte, platelet
+lineage: Erythroid/Megakaryocyte
+notes: Includes megakaryocyte lineage.
+
+group: immune_hspc
+azimuth_refs: pbmcref, bonemarrowref, fetusref, liverref
+azimuth_label_patterns: HSPC, HSC, CLP, LMPP, EMP, GMP, Hematopoietic stem cells
+cellmarker_name_patterns: hematopoietic stem, progenitor, CMP, GMP, CLP, LMPP
+lineage: HSPC
+notes: Progenitor compartment.
+
+group: lung_epithelium_airway
+azimuth_refs: lungref, fetusref
+azimuth_label_patterns: Airway epithelium, Multiciliated lineage, Club, Goblet, Secretory, Ionocyte, Tuft, Multiciliated, Goblet, SMG duct, SMG mucous, SMG serous, Submucosal Gland, Submucosal Secretory, Suprabasal, Basal, Basal resting, Deuterosomal, Transitional Club-AT2, Bronchiolar and alveolar epithelial cells, Ciliated epithelial cells, Goblet cells, Squamous epithelial cells, Neuroendocrine cells
+cellmarker_name_patterns: epithelial, basal, ciliated, club, goblet, secretory, ionocyte, brush, tuft, neuroendocrine
+lineage: Epithelial
+notes: lungref ann_level_2-5 and fetusref epithelial labels.
+
+group: lung_epithelium_alveolar
+azimuth_refs: lungref, fetusref
+azimuth_label_patterns: Alveolar epithelium, AT1, AT2, AT2 proliferating, Aerocyte, Alveolar, Alveolar cell, Alveolar pneumocyte, Pulmonary alveolar cell Type 2, Bronchiolar and alveolar epithelial cells
+cellmarker_name_patterns: alveolar, AT1, AT2, pneumocyte, aerocyte
+lineage: Epithelial
+notes: Focused alveolar programs.
+
+group: lung_endothelium
+azimuth_refs: lungref, fetusref, liverref
+azimuth_label_patterns: Endothelial, Blood vessels, EC arterial, EC capillary, EC venous, EC aerocyte capillary, EC general capillary, EC venous pulmonary, EC venous systemic, Lymphatic EC, Lymphatic EC differentiating, Lymphatic EC mature, Lymphatic EC proliferating, Vascular endothelial cells, Lymphatic endothelial cells
+cellmarker_name_patterns: endothelial, vascular, lymphatic, capillary
+lineage: Endothelial
+notes: Endothelial/vascular programs in lung/fetus.
+
+group: lung_fibroblast_stroma
+azimuth_refs: lungref, fetusref, liverref
+azimuth_label_patterns: Stroma, Fibroblast lineage, Fibroblasts, Myofibroblasts, Fibromyocytes, Adventitial fibroblasts, Alveolar fibroblasts, Peribronchial fibroblasts, Subpleural fibroblasts, Stromal cells, Stellate cells, Mesenchymal, Osteoblast
+cellmarker_name_patterns: fibroblast, mesenchymal, stromal, myofibroblast, osteoblast, osteogenic
+lineage: Fibroblast/Stroma
+notes: Stromal/mesenchymal programs.
+
+group: lung_smooth_muscle_pericyte
+azimuth_refs: lungref, adiposeref, fetusref, liverref
+azimuth_label_patterns: Smooth muscle, SM activated stress response, Pericytes, Smooth Muscle, Pericyte, Smooth muscle cells
+cellmarker_name_patterns: smooth muscle, pericyte
+lineage: Smooth muscle/Pericyte
+notes: Vascular support cells.
+
+group: lung_mesothelial
+azimuth_refs: lungref, fetusref, adiposeref, liverref
+azimuth_label_patterns: Mesothelium, Mesothelial cells, Mesothelial
+cellmarker_name_patterns: mesothelial
+lineage: Mesothelial
+notes: Mesothelial lineage.
+
+group: neuro_neuronal
+azimuth_refs: fetusref
+azimuth_label_patterns: Excitatory neurons, Inhibitory neurons, Inhibitory interneurons, Granule neurons, Purkinje neurons, Limbic system neurons, Visceral neurons, ENS neurons, Ganglion cells, Unipolar brush cells, Sympathoblasts
+cellmarker_name_patterns: neuron, interneuron, sensory neuron
+lineage: Neuron
+notes: Broad neuronal lineage.
+
+group: neuro_glial
+azimuth_refs: fetusref
+azimuth_label_patterns: Astrocytes, Oligodendrocytes, Microglia, ENS glia, Schwann cells, Satellite cells, Retinal progenitors and Muller glia
+cellmarker_name_patterns: astrocyte, oligodendrocyte, microglia, glial, schwann, satellite
+lineage: Glial
+notes: Glial lineage.
+
+group: neuro_progenitor
+azimuth_refs: fetusref
+azimuth_label_patterns: Retinal progenitors and Muller glia, Metanephric cells
+cellmarker_name_patterns: neural progenitor, progenitor, precursor
+lineage: Neural progenitor
+notes: Progenitors (embryonic brain/DRG-like); refine if needed.
+
+group: embryonic_stem_pluripotent
+azimuth_refs: fetusref
+azimuth_label_patterns: Hematopoietic stem cells
+cellmarker_name_patterns: pluripotent, stem cell
+lineage: Pluripotent/Stem
+notes: Fetal ref uses Hematopoietic stem cells as stem-like signal; refine if you want only ESC-like.
+
+group: epithelium_general
+azimuth_refs: fetusref, adiposeref, liverref
+azimuth_label_patterns: Epithelial, Squamous epithelial cells, Corneal and conjunctival epithelial cells, Intestinal epithelial cells, Ciliated epithelial cells, Goblet cells, Ductal cells
+cellmarker_name_patterns: epithelial, basal epithelial, epithelium
+lineage: Epithelial
+notes: General epithelial programs outside lung.
+
+group: adipose_like_optional
+azimuth_refs: adiposeref
+azimuth_label_patterns: Adipocyte, hAd1, hAd2, hAd3, hAd4, hAd5, hAd6, hAd7, ASPC, hASPC
+cellmarker_name_patterns: adipocyte, adipose
+lineage: Adipose
+notes: Optional. Only include if adipose tissue is desired.
+
