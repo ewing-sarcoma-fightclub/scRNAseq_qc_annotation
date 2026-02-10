@@ -185,6 +185,21 @@ mamba install -n ewing-scrna-r -c conda-forge -c bioconda \
   r-nloptr r-lme4 r-pbkrtest r-car r-rstatix r-ggpubr
 ```
 
+If Bioconductor installs fail on macOS with errors like “C17 standard requested but CC17 is not defined”,
+install Xcode Command Line Tools and set compiler variables:
+
+```bash
+xcode-select --install
+```
+
+Then add to `~/.R/Makevars`:
+```
+CC=clang
+CXX=clang++
+CC17=clang
+CXX17=clang++
+```
+
 #### GitHub-only R packages (required)
 These are not guaranteed to be available via conda/Bioconductor. Install them in the R env:
 

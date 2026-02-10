@@ -24,6 +24,14 @@ Ewing Sarcoma scRNA-seq Pipeline - Quick Install
    If DropletQC fails to install on macOS due to ggpubr/lme4, install these via conda first:
      micromamba install -n ewing-scrna-r -c conda-forge -c bioconda r-nloptr r-lme4 r-pbkrtest r-car r-rstatix r-ggpubr
 
+   If Bioconductor installs fail with “C17 standard requested but CC17 is not defined”:
+     xcode-select --install
+     Then add to ~/.R/Makevars:
+       CC=clang
+       CXX=clang++
+       CC17=clang
+       CXX17=clang++
+
 3) Install required R GitHub packages (inside R env):
    micromamba activate ewing-scrna-r
    Rscript -e "if (!requireNamespace('remotes', quietly=TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder'); remotes::install_github('powellgenomicslab/DropletQC')"
