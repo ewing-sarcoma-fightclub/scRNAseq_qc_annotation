@@ -159,6 +159,15 @@ mamba activate ewing-scrna-r
 
 If any R packages are missing after env creation, install them from R (Bioconductor or GitHub).
 
+Note for macOS (Apple Silicon): `bioconductor-dropletutils` is not available via conda on `osx-arm64`.
+Use the mac-specific env file, then install DropletUtils from Bioconductor:
+
+```bash
+mamba env create -f env/envs/r.macos.yml
+mamba activate ewing-scrna-r
+Rscript -e "if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager', repos='https://cloud.r-project.org'); BiocManager::install('DropletUtils')"
+```
+
 #### GitHub-only R packages (required)
 These are not guaranteed to be available via conda/Bioconductor. Install them in the R env:
 

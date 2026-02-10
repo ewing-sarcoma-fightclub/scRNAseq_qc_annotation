@@ -15,6 +15,12 @@ Ewing Sarcoma scRNA-seq Pipeline - Quick Install
      micromamba activate ewing-scrna-py
      pip install dropkick
 
+   Note for macOS (Apple Silicon) R env: use env/envs/r.macos.yml (DropletUtils not available on osx-arm64 via conda).
+   Then install DropletUtils from Bioconductor:
+     micromamba create -n ewing-scrna-r -f env/envs/r.macos.yml
+     micromamba activate ewing-scrna-r
+     Rscript -e "if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager', repos='https://cloud.r-project.org'); BiocManager::install('DropletUtils')"
+
 3) Install required R GitHub packages (inside R env):
    micromamba activate ewing-scrna-r
    Rscript -e "if (!requireNamespace('remotes', quietly=TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder'); remotes::install_github('powellgenomicslab/DropletQC')"
