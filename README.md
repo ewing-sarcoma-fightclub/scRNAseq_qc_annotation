@@ -116,6 +116,13 @@ To pre-install Azimuth references (large downloads), run:
 
 ## Matrix-only inputs (no FASTQs/BAMs)
 If you start from matrices only (e.g., GEO), you can skip Cell Ranger and DropletQC.
+Example dataset used in this project: Ewing sarcoma scRNA-seq from GEO `GSE277083` (see the associated publication for study details).
+Use the helper script to download/clean the GEO inputs into the expected `outputs/cellranger/` layout:
+
+```bash
+./bin/prepare_geo_primary.sh --clean
+```
+
 Example for GSE277083 primary-only inputs:
 
 ```bash
