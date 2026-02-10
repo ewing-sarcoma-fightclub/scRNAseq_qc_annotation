@@ -177,6 +177,14 @@ mamba activate ewing-scrna-r
 Rscript -e "if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager', repos='https://cloud.r-project.org'); BiocManager::install('DropletUtils')"
 ```
 
+DropletQC on macOS may fail to build because it depends on `ggpubr` (and its compiled dependencies).
+Install these via conda before installing DropletQC from GitHub:
+
+```bash
+mamba install -n ewing-scrna-r -c conda-forge -c bioconda \
+  r-nloptr r-lme4 r-pbkrtest r-car r-rstatix r-ggpubr
+```
+
 #### GitHub-only R packages (required)
 These are not guaranteed to be available via conda/Bioconductor. Install them in the R env:
 
