@@ -2,16 +2,25 @@ Ewing Sarcoma scRNA-seq Pipeline - Quick Install
 
 1) Get the code
    git clone <repo_url>
-   cd pipeline
+   cd <repo>/polished_scripts/pipeline
 
 2) Install micromamba (recommended) or conda/mamba.
    Then create environments:
    micromamba create -n ewing-scrna-py -f env/envs/python.lock.yml
    micromamba create -n ewing-scrna-r  -f env/envs/r.lock.yml
 
+   Note for macOS (Apple Silicon): use env/envs/python.yml (dropkick is not available on osx-arm64).
+   It is optional for this pipeline. If you want it, install via pip:
+     micromamba create -n ewing-scrna-py -f env/envs/python.yml
+     micromamba activate ewing-scrna-py
+     pip install dropkick
+
 3) Install required R GitHub packages (inside R env):
    micromamba activate ewing-scrna-r
    Rscript -e "if (!requireNamespace('remotes', quietly=TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder'); remotes::install_github('powellgenomicslab/DropletQC')"
+   # If not using lockfiles, ensure these are installed too:
+   Rscript -e "if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager', repos='https://cloud.r-project.org'); BiocManager::install('AUCell')"
+   Rscript -e "if (!requireNamespace('mclust', quietly=TRUE)) install.packages('mclust', repos='https://cloud.r-project.org')"
 
 4) Create local config:
    cp env/config.env env/config.local.env
@@ -25,10 +34,12 @@ Ewing Sarcoma scRNA-seq Pipeline - Quick Install
    Full run with Cell Ranger:
      ./bin/run_all.sh
 
-   Matrix-only inputs (no FASTQs and BAMs):
-     ./bin/prepare_geo_primary.sh --clean
-     ./bin/run_all.sh --skip-cellranger --cellranger-root ./outputs/cellranger --qc-out ./outputs/qc --config ./env/config.local.env
+  Matrix-only inputs (no FASTQs and BAMs):
+    ./bin/prepare_geo_primary.sh --clean
+    ./bin/run_all.sh --skip-cellranger --cellranger-root ./outputs/cellranger --qc-out ./outputs/qc --config ./env/config.local.env
 
 Notes:
 - Cell Ranger is proprietary and must be installed separately.
 - Outputs are written under ./outputs/
+ - Azimuth references are large; pre-install them if you plan to use label transfer:
+   ./bin/setup_envs.sh --install-azimuth-refs --azimuth-refs lungref,liverref

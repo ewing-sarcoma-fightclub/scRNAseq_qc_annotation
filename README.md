@@ -141,6 +141,14 @@ mamba env create -f env/envs/python.yml
 mamba activate ewing-scrna-py
 ```
 
+Note for macOS (Apple Silicon): `dropkick` is not available on `osx-arm64` via conda.
+It is optional for this pipeline and is omitted from `env/envs/python.yml`. If you want it,
+install via pip after creating the env:
+
+```bash
+pip install dropkick
+```
+
 ### R (SoupX, Seurat, DropletQC, DoubletFinder)
 Create the R environment from `env/envs/r.yml`:
 
