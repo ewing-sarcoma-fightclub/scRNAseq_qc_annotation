@@ -1,15 +1,12 @@
 # Ewing Sarcoma scRNA-seq Pipeline
 
-This folder is a portable copy of the pipeline with config-driven paths and write-safe outputs.
-All generated files are written under `outputs/` by default so input directories can be read-only.
-
 **Quick Install**
 1. Get the code:
 ```bash
 git clone https://github.com/ewing-sarcoma-fightclub/scRNAseq_qc_annotation.git
 cd scRNAseq_qc_annotation
 ```
-2. Install micromamba (recommended) or conda/mamba, then create environments:
+2. Install micromamba or conda/mamba, then create environments:
 ```bash
 micromamba create -n ewing-scrna-py -f env/envs/python.lock.yml
 micromamba create -n ewing-scrna-r  -f env/envs/r.lock.yml
@@ -30,7 +27,7 @@ cp env/config.env env/config.local.env
 ```
 Edit `env/config.local.env` and set:
 - `FASTQ_ROOT` (if using FASTQs)
-- `AMBIQUANT_REPO` (optional but recommended to track ambient contamination)
+- `AMBIQUANT_REPO` (to track ambient contamination)
 - `PYTHON_BIN` / `R_BIN` (paths to env binaries)
 - `SEURAT_FINAL_REQUIRE_DROPLETQC=false` (if no BAMs)
 5. Run:
@@ -162,7 +159,7 @@ mamba activate ewing-scrna-r
 Rscript -e "if (!requireNamespace('remotes', quietly=TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder'); remotes::install_github('powellgenomicslab/DropletQC')"
 ```
 
-### AmbiQuant (optional but recommended)
+### AmbiQuant
 Clone the AmbiQuant repo and set `AMBIQUANT_REPO` in `env/config.env`. If you use a micromamba/conda env,
 set `AMBIQUANT_ENV` and `MICROMAMBA_BIN` as well. If `AMBIQUANT_REPO` is empty, AmbiQuant steps are skipped.
 
