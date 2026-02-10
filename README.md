@@ -6,8 +6,8 @@ All generated files are written under `outputs/` by default so input directories
 **Quick Install**
 1. Get the code:
 ```bash
-git clone <repo_url>
-cd <repo>/polished_scripts/pipeline
+git clone https://github.com/ewing-sarcoma-fightclub/scRNAseq_qc_annotation.git
+cd scRNAseq_qc_annotation
 ```
 2. Install micromamba (recommended) or conda/mamba, then create environments:
 ```bash
