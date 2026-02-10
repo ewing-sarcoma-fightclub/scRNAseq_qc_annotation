@@ -6,6 +6,16 @@ suppressPackageStartupMessages({
   library(ggplot2)
 })
 
+script_dir <- {
+  args_full <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("^--file=", args_full, value = TRUE)
+  if (length(file_arg) > 0) {
+    dirname(normalizePath(sub("^--file=", "", file_arg[1])))
+  } else {
+    getwd()
+  }
+}
+
 # ---- args ----
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 2) {
@@ -25,15 +35,6 @@ max_percent_mt <- ifelse(length(args) >= 10 && nzchar(args[[10]]), as.numeric(ar
 seed <- ifelse(length(args) >= 11 && nzchar(args[[11]]), as.integer(args[[11]]), 1)
 
 if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
-
-get_script_dir <- function() {
-  args_full <- commandArgs(trailingOnly = FALSE)
-  file_arg <- grep("^--file=", args_full, value = TRUE)
-  if (length(file_arg) > 0) {
-    return(dirname(normalizePath(sub("^--file=", "", file_arg[1]))))
-  }
-  return(getwd())
-}
 
 normalize_col <- function(x) {
   tolower(gsub("[^a-z0-9]", "", x))
@@ -126,7 +127,7 @@ resolve_doublet_rate <- function(raw_value, sample_dir) {
   if (!nzchar(table_path)) {
     chem_env <- Sys.getenv("DOUBLETFINDER_CHEMISTRY", "")
     chem_use <- if (nzchar(chem_env)) chem_env else metrics$chemistry
-    table_path <- select_rate_table(chem_use, get_script_dir())
+    table_path <- select_rate_table(chem_use, script_dir)
   }
   if (file.exists(table_path) && is_valid_scalar(n_cells) && n_cells > 0) {
     tab <- tryCatch(read.csv(table_path, stringsAsFactors = FALSE), error = function(e) NULL)

@@ -12,17 +12,18 @@ if (length(args) < 1) {
 rules_csv <- args[[1]]
 out_file <- ifelse(length(args) >= 2, args[[2]], "")
 
-get_script_dir <- function() {
+script_dir <- {
   args_full <- commandArgs(trailingOnly = FALSE)
   file_arg <- grep("^--file=", args_full, value = TRUE)
   if (length(file_arg) > 0) {
-    return(dirname(normalizePath(sub("^--file=", "", file_arg[1]))))
+    dirname(normalizePath(sub("^--file=", "", file_arg[1])))
+  } else {
+    getwd()
   }
-  return(getwd())
 }
 
 if (!nzchar(out_file)) {
-  out_file <- file.path(get_script_dir(), "..", "resources", "celltype_grouping.txt")
+  out_file <- file.path(script_dir, "..", "resources", "celltype_grouping.txt")
 }
 
 if (!file.exists(rules_csv)) {
