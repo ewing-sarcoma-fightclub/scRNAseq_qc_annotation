@@ -1,4 +1,4 @@
-# Ewing Sarcoma scRNA-seq Pipeline (portable)
+# Ewing Sarcoma scRNA-seq Pipeline 
 
 This folder is a portable copy of the pipeline with config-driven paths and write-safe outputs.
 All generated files are written under `outputs/` by default so input directories can be read-only.
@@ -34,6 +34,8 @@ Or to run only QC directly (recommended to use `env/config.local.env` if present
 If `env/config.local.env` exists, `run_all.sh` and `pipeline_QC_after_cellranger.sh`
 will use it automatically. Prefer it over `env/config.env` because it pins the correct
 `R_BIN`/`PYTHON_BIN` for your environment.
+For final runs, use `env/config.production.env` (a locked snapshot of `env/config.env`
++ `env/config.local.env`) by passing `--config`.
 
 ## Repo layout
 - `bin/` entrypoints and orchestration scripts
@@ -44,7 +46,7 @@ will use it automatically. Prefer it over `env/config.env` because it pins the c
 - `env/` configs + conda/mamba environment files
 - `docs/` tutorials and walkthroughs (see `docs/pipeline_tutorial_minimal.md`)
 
-## One-command setup (recommended on a new machine)
+## One-command setup 
 This creates/updates the Python + R environments, installs GitHub-only R packages,
 and writes `env/config.local.env` with the correct `R_BIN`/`PYTHON_BIN` paths.
 
@@ -58,7 +60,7 @@ To pre-install Azimuth references (large downloads), run:
 ./bin/setup_envs.sh --install-azimuth-refs --azimuth-refs lungref,liverref
 ```
 
-## Output layout (default)
+## Output layout 
 - `outputs/refdata/` Cell Ranger reference
 - `outputs/cellranger/` Cell Ranger per-sample outputs
 - `outputs/qc/` QC outputs (EmptyDrops, Seurat metadata, SoupX, DoubletFinder, DropletQC, AmbiQuant, Seurat QC)
@@ -125,20 +127,45 @@ set `AMBIQUANT_ENV` and `MICROMAMBA_BIN` as well. If `AMBIQUANT_REPO` is empty, 
   Set `SEURAT_FINAL_REGRESS=true` to enable SCTransform regression on `percent.mt`, `percent.rps`, `percent.rpl`.
 - Cell cycle scoring uses Seurat's built-in `cc.genes.updated.2019`.
   Set `SEURAT_FINAL_REGRESS_CELL_CYCLE=true` to regress out `S.Score` and `G2M.Score`.
+- If `SEURAT_FINAL_REQUIRE_EMPTYDROPS=true` or `SEURAT_FINAL_REQUIRE_DROPLETQC=true`, missing inputs now stop the run
+  with a clear error instead of silently filtering everything.
 - DoubletFinder rate: set `DOUBLETFINDER_RATE=auto` to derive rates from Cell Ranger metrics
   (uses `doublet_rate_table_v3.csv` when chemistry is unknown). You can override with a numeric rate.
   Set `DOUBLETFINDER_CHEMISTRY` to pick a built-in table (supported: `3p_v3`, `3p_v3p1`, `3p_v4`,
   `3p_ht_v3p1`, `5p_v2`). You can also set `DOUBLETFINDER_RATE_TABLE` to a custom CSV with `n_cells,rate`.
   DoubletFinder reproducibility: set `DOUBLETFINDER_SEED` to control the RNG seed (default: 1).
+- Doublet filtering mode: set `DOUBLET_FILTER_MODE=doubletfinder|scrublet|union|intersection`.
+  Scrublet calls are detected from metadata columns `predicted_doublets` or `predicted_doublet` when present.
 - Final QC thresholds: set `SEURAT_FINAL_MAX_PERCENT_MT` and `SEURAT_FINAL_MAX_PERCENT_RIBO` to filter cells
   by mitochondrial and ribosomal content. Set `SEURAT_FINAL_BASIC_MIN_FEATURES` to align the basic QC gate
   with DoubletFinder (defaults to `DOUBLETFINDER_MIN_FEATURES` if unset).
+- Integration tuning: if you see "Number of anchor cells is less than k.weight", set
+  `SEURAT_INTEGRATION_KWEIGHT` lower (e.g., 30) or increase `SEURAT_INTEGRATION_KANCHOR`.
 - DropletQC uses Leiden clusters from `outputs/qc/seurat_metadata/<sample>/metadata.csv` when available
   (falls back to a single `cell_type=all` group). DropletQC requires `possorted_genome_bam.bam`; if you start
   from matrix-only inputs (no BAMs), set `SEURAT_FINAL_REQUIRE_DROPLETQC=false` in `env/config.local.env`.
 - CellMarker2.0 + Azimuth annotation: the pipeline reads CellMarker2.0 directly from
   `CELL_MARKER_XLSX` (default `resources/Cell_marker_Seq_human.xlsx`), optionally filters by
   `CELL_MARKER_TISSUES` (comma list or file path), then computes AddModuleScore per sample.
+  If features are Ensembl IDs, set `ENSEMBL_TO_SYMBOL_MAP` to map ENSG→symbols (or set
+  `ALLOW_ENSG_IDS=true` to proceed without mapping). Duplicate symbol collisions are aggregated
+  by summing counts/data (and averaging scale data). Use `ENSEMBL_SYMBOL_DUP_MAX` to enforce a limit.
+  Module pruning defaults to keeping only signatures referenced in `celltype_grouping.txt`
+  and removing redundancies by gene overlap. Tune with `CELL_MARKER_KEEP_BY_GROUPING` and
+  `CELL_MARKER_MAX_JACCARD` (default 0.7). Optional manual removals via `CELL_MARKER_DROP_MODULES`.
+  Module scoring uses AUCell AUC thresholds; configure via `AUCELL_SLOT` (must be non-negative; recommended `counts`),
+  `AUCELL_MIN_GENES` (default 10), `AUCELL_MAX_RANK` (0 = top 5%), and `AUCELL_NCORES`.
+  AUCell per-sample thresholds are saved under `annotation_helper_files/aucell/<sample>.aucell_thresholds.csv`.
+  Grouping patterns use literal + normalized matching (regex is not supported).
+  Azimuth support thresholds are calibrated per reference via a 2-component mixture model (posterior cutoff; requires `mclust`, otherwise falls back to quantiles).
+  Configure with `AZIMUTH_THRESHOLD_METHOD`, `AZIMUTH_THRESHOLD_POSTERIOR`, `AZIMUTH_THRESHOLD_MIN_N`,
+  and `AZIMUTH_THRESHOLD_FALLBACK_PCT` (used if calibration is unavailable).
+  Orthogonal validation computes cluster marker DE with per-cluster downsampling; configure via
+  `ANNOTATION_DE_ASSAY`, `ANNOTATION_DE_MIN_PCT`, `ANNOTATION_DE_LOGFC`,
+  `ANNOTATION_DE_MAX_CELLS_PER_CLUSTER`, `ANNOTATION_DE_MAX_TOTAL_CELLS`,
+  `ANNOTATION_DE_TOP_N`, and `ANNOTATION_DE_SEED`.
+  Integration outputs are for visualization/clustering only; all annotation decisions should be based on
+  pre-integration data and unintegrated expression.
   The Ewing sarcoma signature is loaded from `EWING_SIGNATURE_CSV` (default `resources/Aynaud.csv`).
   Azimuth references are run per sample (default: pbmcref, bonemarrowref, lungref, adiposeref, fetusref, liverref).
   To regenerate the Azimuth label catalog used for pattern curation, run:
@@ -147,15 +174,21 @@ set `AMBIQUANT_ENV` and `MICROMAMBA_BIN` as well. If `AMBIQUANT_REPO` is empty, 
   `Rscript r/build_celltype_grouping.R resources/celltype_grouping_rules.csv`.
   Outputs include:
   - `outputs/annotation_integration/seurat_annotation_integration/merged_annotations.csv` (per-cell module and Azimuth scores)
-  - `outputs/annotation_integration/seurat_annotation_integration/celltype_assignment_by_cluster.csv` (cluster-level assignment summary)
-  - `outputs/annotation_integration/seurat_annotation_integration/cellmarker_modules_map.csv` (module index → name map)
-  - `outputs/annotation_integration/seurat_annotation_integration/umap_pre/` (merged UMAPs by sample/cell type)
+  - `outputs/annotation_integration/seurat_annotation_integration/annotation_helper_files/celltype_assignment_by_cluster.csv` (cluster-level assignment summary)
+  - `outputs/annotation_integration/seurat_annotation_integration/annotation_helper_files/cell_marker_modules_map.csv` (module index → name map)
+  - `outputs/annotation_integration/seurat_annotation_integration/annotation_helper_files/cellmarker_module_pruning.csv` (module pruning report)
+  - `outputs/annotation_integration/seurat_annotation_integration/annotation_helper_files/azimuth_reference_summary.csv` (per-reference Azimuth sanity summary)
+  - `outputs/annotation_integration/seurat_annotation_integration/annotation_helper_files/azimuth_thresholds.csv` (per-reference Azimuth thresholds + method)
+  - `outputs/annotation_integration/seurat_annotation_integration/annotation_helper_files/cluster_markers.csv` (cluster marker DE table)
+  - `outputs/annotation_integration/seurat_annotation_integration/annotation_helper_files/cluster_marker_enrichment.csv` (top-marker overlap with assigned group)
+  - `outputs/annotation_integration/seurat_annotation_integration/umap_pre_integration/` (merged UMAPs by sample)
+  - `outputs/annotation_integration/seurat_annotation_integration/umap_post_integration/` (integrated UMAPs by clusters/sample/cell type)
   - `outputs/annotation_integration/seurat_annotation_integration/featureplots_samples/<sample>/` (module + EWING feature plots on merged UMAP)
   - `outputs/annotation_integration/seurat_annotation_integration/featureplots_celltypes_samples/<sample>/` (per-celltype highlight plots)
-  Annotation combines percentile-based Azimuth and module evidence, with a tumor-priority
+  Annotation combines calibrated per-reference Azimuth support and module evidence, with a tumor-priority
   override when Ewing signature is strong alongside neuronal/fetal programs.
 
-## Reproducible environments (lock files)
+## Reproducible environments 
 We provide pinned exports in `env/envs/python.lock.yml` and `env/envs/r.lock.yml` generated from a working install.
 These are OS-specific but useful for reproducing exact versions.
 
