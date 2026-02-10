@@ -11,6 +11,11 @@ cd scRNAseq_qc_annotation
 micromamba create -n ewing-scrna-py -f env/envs/python.lock.yml
 micromamba create -n ewing-scrna-r  -f env/envs/r.lock.yml
 ```
+macOS (Apple Silicon) alternatives:
+```bash
+micromamba create -n ewing-scrna-py -f env/envs/python.yml
+micromamba create -n ewing-scrna-r  -f env/envs/r.macos.yml
+```
 3. Install required R GitHub packages (inside the R env):
 ```bash
 micromamba activate ewing-scrna-r
@@ -20,6 +25,10 @@ If not using lockfiles, ensure these are installed too:
 ```bash
 Rscript -e "if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager', repos='https://cloud.r-project.org'); BiocManager::install('AUCell')"
 Rscript -e "if (!requireNamespace('mclust', quietly=TRUE)) install.packages('mclust', repos='https://cloud.r-project.org')"
+```
+macOS (Apple Silicon) additional step:
+```bash
+Rscript -e "if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager', repos='https://cloud.r-project.org'); BiocManager::install('DropletUtils')"
 ```
 4. Create local config:
 ```bash
