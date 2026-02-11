@@ -1,62 +1,62 @@
-Ewing Sarcoma scRNA-seq Pipeline - Quick Install
+Ewing Sarcoma scRNA-seq Pipeline - Install Guide
 
-1) Get the code
-   git clone <repo_url>
-   cd <repo>/polished_scripts/pipeline
+1) Clone repository
+   git clone https://github.com/ewing-sarcoma-fightclub/scRNAseq_qc_annotation.git
+   cd scRNAseq_qc_annotation
 
-2) Install micromamba (recommended) or conda/mamba.
-   Then create environments:
-   micromamba create -n ewing-scrna-py -f env/envs/python.lock.yml
-   micromamba create -n ewing-scrna-r  -f env/envs/r.lock.yml
+2) Recommended setup (one command)
+   ./bin/setup_envs.sh
 
-   Note for macOS (Apple Silicon): use env/envs/python.yml (dropkick is not available on osx-arm64).
-   It is optional for this pipeline. If you want it, install via pip:
+   This command:
+   - creates/updates Python + R environments
+   - installs required R packages in dependency-safe order
+   - writes env/config.local.env with resolved R_BIN/PYTHON_BIN
+   - sets R_LIBS_USER=NULL in config.local to avoid user-library package conflicts
+
+3) R package install order (implemented in r/install_pipeline_packages.R)
+   a) CRAN baseline: future, mclust, remotes, statmod
+   b) Bioconductor: AUCell, DropletUtils
+   c) CRAN stack for DropletQC compatibility: nloptr, lme4, pbkrtest, car, rstatix, ggpubr
+   d) GitHub-only required packages:
+      - chris-mcginnis-ucsf/DoubletFinder
+      - powellgenomicslab/DropletQC
+   e) Optional Azimuth references (SeuratData::InstallData)
+
+4) Manual env creation (if skipping setup_envs.sh)
+   Linux:
+     micromamba create -n ewing-scrna-py -f env/envs/python.lock.yml
+     micromamba create -n ewing-scrna-r  -f env/envs/r.lock.yml
+     micromamba run -n ewing-scrna-r env -u R_LIBS R_LIBS_USER=NULL Rscript r/install_pipeline_packages.R
+
+   macOS (Apple Silicon):
      micromamba create -n ewing-scrna-py -f env/envs/python.yml
-     micromamba activate ewing-scrna-py
-     pip install dropkick
+     micromamba create -n ewing-scrna-r  -f env/envs/r.macos.yml
+     micromamba run -n ewing-scrna-r env -u R_LIBS R_LIBS_USER=NULL Rscript r/install_pipeline_packages.R
 
-   Note for macOS (Apple Silicon) R env: use env/envs/r.macos.yml (DropletUtils not available on osx-arm64 via conda).
-   Then install DropletUtils from Bioconductor:
-     micromamba create -n ewing-scrna-r -f env/envs/r.macos.yml
-     micromamba activate ewing-scrna-r
-     Rscript -e "if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager', repos='https://cloud.r-project.org'); BiocManager::install('DropletUtils')"
+   macOS (Intel):
+     micromamba create -n ewing-scrna-py -f env/envs/python.yml
+     micromamba create -n ewing-scrna-r  -f env/envs/r.yml
+     micromamba run -n ewing-scrna-r env -u R_LIBS R_LIBS_USER=NULL Rscript r/install_pipeline_packages.R
 
-   If DropletQC fails to install on macOS due to ggpubr/lme4, install these via conda first:
-     micromamba install -n ewing-scrna-r -c conda-forge -c bioconda r-nloptr r-lme4 r-pbkrtest r-car r-rstatix r-ggpubr
-
-   If Bioconductor installs fail with “C17 standard requested but CC17 is not defined”:
-     xcode-select --install
-     Then add to ~/.R/Makevars:
-       CC=clang
-       CXX=clang++
-       CC17=clang
-       CXX17=clang++
-
-3) Install required R GitHub packages (inside R env):
-   micromamba activate ewing-scrna-r
-   Rscript -e "if (!requireNamespace('remotes', quietly=TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder'); remotes::install_github('powellgenomicslab/DropletQC')"
-   # If not using lockfiles, ensure these are installed too:
-   Rscript -e "if (!requireNamespace('BiocManager', quietly=TRUE)) install.packages('BiocManager', repos='https://cloud.r-project.org'); BiocManager::install('AUCell')"
-   Rscript -e "if (!requireNamespace('mclust', quietly=TRUE)) install.packages('mclust', repos='https://cloud.r-project.org')"
-
-4) Create local config:
-   cp env/config.env env/config.local.env
+5) Local config
+   (setup_envs.sh already creates env/config.local.env)
+   [ -f env/config.local.env ] || cp env/config.env env/config.local.env
    Edit env/config.local.env:
-     - FASTQ_ROOT (if using FASTQs)
-     - AMBIQUANT_REPO (optional but recommended to track ambient contamination)
-     - PYTHON_BIN / R_BIN (paths to env binaries)
-     - If no BAMs: SEURAT_FINAL_REQUIRE_DROPLETQC=false
+   - FASTQ_ROOT (if using FASTQs)
+   - AMBIQUANT_REPO (optional)
+   - If no BAM files: SEURAT_FINAL_REQUIRE_DROPLETQC=false
 
-5) Run
-   Full run with Cell Ranger:
+6) Run pipeline
+   Full run:
      ./bin/run_all.sh
 
-  Matrix-only inputs (no FASTQs and BAMs):
-    ./bin/prepare_geo_primary.sh --clean
-    ./bin/run_all.sh --skip-cellranger --cellranger-root ./outputs/cellranger --qc-out ./outputs/qc --config ./env/config.local.env
+   Matrix-only run (no FASTQs/BAMs):
+     ./bin/prepare_geo_primary.sh --clean
+     ./bin/run_all.sh --skip-cellranger --cellranger-root ./outputs/cellranger --qc-out ./outputs/qc --config ./env/config.local.env
+
+Optional: pre-install Azimuth references (large download)
+   ./bin/setup_envs.sh --install-azimuth-refs --azimuth-refs lungref,liverref
 
 Notes:
 - Cell Ranger is proprietary and must be installed separately.
-- Outputs are written under ./outputs/
- - Azimuth references are large; pre-install them if you plan to use label transfer:
-   ./bin/setup_envs.sh --install-azimuth-refs --azimuth-refs lungref,liverref
+- Outputs are written under ./outputs/.

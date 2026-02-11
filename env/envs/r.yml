@@ -5,7 +5,16 @@ channels:
 dependencies:
   - r-base=4.4
   - compilers
+  - r-biocmanager
+  - r-future
   - r-ggplot2
+  - r-ggpubr
+  - r-car
+  - r-rstatix
+  - r-pbkrtest
+  - r-lme4
+  - r-nloptr
+  - r-mclust
   - r-matrix
   - r-seurat
   - r-seurat-data

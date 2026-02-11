@@ -71,9 +71,12 @@ AMBIQUANT_ENV="${AMBIQUANT_ENV:-}"
 AMBIQUANT_REPO="${AMBIQUANT_REPO:-}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 R_BIN="${R_BIN:-Rscript}"
+R_LIBS_USER="${R_LIBS_USER:-NULL}"
 
 export PYTHON_BIN
 export R_BIN
+export R_LIBS_USER
+unset R_LIBS || true
 
 EMPTYDROPS_OUT="${OUT_QC}/emptydrops"
 SEURAT_META_OUT="${OUT_QC}/seurat_metadata"

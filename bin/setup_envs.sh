@@ -30,10 +30,11 @@ USE_LOCK=true
 SKIP_R=false
 SKIP_PY=false
 INSTALL_GITHUB=true
-INSTALL_AZIMUTH_REFS=true
+INSTALL_AZIMUTH_REFS=false
 AZIMUTH_REFERENCES="${AZIMUTH_REFERENCES:-pbmcref,bonemarrowref,lungref,adiposeref,fetusref,liverref}"
 CONFIG_IN="${CONFIG_IN:-${ROOT_DIR}/env/config.env}"
 CONFIG_OUT="${CONFIG_OUT:-${ROOT_DIR}/env/config.local.env}"
+R_INSTALL_SCRIPT="${ROOT_DIR}/r/install_pipeline_packages.R"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -77,9 +78,31 @@ fi
 
 R_ENV_NAME="ewing-scrna-r"
 PY_ENV_NAME="ewing-scrna-py"
+OS_NAME="$(uname -s)"
+OS_ARCH="$(uname -m)"
+
+is_macos_arm() {
+  [[ "${OS_NAME}" == "Darwin" && "${OS_ARCH}" == "arm64" ]]
+}
 
 choose_env_file() {
   local base="$1"
+  if [[ "${OS_NAME}" == "Darwin" ]]; then
+    if [[ "$base" == "r" ]]; then
+      if is_macos_arm && [[ -f "${ROOT_DIR}/env/envs/r.macos.yml" ]]; then
+        echo "${ROOT_DIR}/env/envs/r.macos.yml"
+        return
+      fi
+      if [[ -f "${ROOT_DIR}/env/envs/r.yml" ]]; then
+        echo "${ROOT_DIR}/env/envs/r.yml"
+        return
+      fi
+    fi
+    if [[ "$base" == "python" && -f "${ROOT_DIR}/env/envs/python.yml" ]]; then
+      echo "${ROOT_DIR}/env/envs/python.yml"
+      return
+    fi
+  fi
   if $USE_LOCK && [[ -f "${ROOT_DIR}/env/envs/${base}.lock.yml" ]]; then
     echo "${ROOT_DIR}/env/envs/${base}.lock.yml"
   else
@@ -135,15 +158,27 @@ if [[ -n "$PY_PREFIX" ]]; then
   PY_BIN="${PY_PREFIX}/bin/python"
 fi
 
-if ! $SKIP_R && $INSTALL_GITHUB; then
-  echo "[setup] Installing GitHub-only R packages (DoubletFinder, DropletQC)"
-  "$R_BIN" -e "options(repos=c(CRAN='https://cloud.r-project.org')); if (!requireNamespace('remotes', quietly=TRUE)) install.packages('remotes'); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder', upgrade='never'); remotes::install_github('powellgenomicslab/DropletQC', upgrade='never')"
-fi
-
-if ! $SKIP_R && $INSTALL_AZIMUTH_REFS; then
-  AZIMUTH_REFERENCES_CLEAN="$(echo "$AZIMUTH_REFERENCES" | tr -d ' ')"
-  echo "[setup] Installing Azimuth references: ${AZIMUTH_REFERENCES_CLEAN}"
-  "$R_BIN" -e "options(repos=c(CRAN='https://cloud.r-project.org')); if (!requireNamespace('SeuratData', quietly=TRUE)) install.packages('SeuratData'); refs <- strsplit('${AZIMUTH_REFERENCES_CLEAN}', ',')[[1]]; refs <- refs[refs != '']; for (r in refs) { message('Installing ', r); SeuratData::InstallData(r, force=FALSE) }"
+if ! $SKIP_R; then
+  if [[ ! -f "${R_INSTALL_SCRIPT}" ]]; then
+    echo "[setup] R install script not found: ${R_INSTALL_SCRIPT}" >&2
+    exit 1
+  fi
+  R_ENV_BIN_DIR="$(dirname "$R_BIN")"
+  R_INSTALL_ARGS=()
+  if ! $INSTALL_GITHUB; then
+    R_INSTALL_ARGS+=(--skip-github)
+  fi
+  if $INSTALL_AZIMUTH_REFS; then
+    AZIMUTH_REFERENCES_CLEAN="$(echo "$AZIMUTH_REFERENCES" | tr -d ' ')"
+    echo "[setup] Installing Azimuth references: ${AZIMUTH_REFERENCES_CLEAN}"
+    R_INSTALL_ARGS+=(--install-azimuth-refs --azimuth-refs "${AZIMUTH_REFERENCES_CLEAN}")
+  fi
+  echo "[setup] Installing required R packages for pipeline"
+  if [[ ${#R_INSTALL_ARGS[@]} -gt 0 ]]; then
+    PATH="${R_ENV_BIN_DIR}:${PATH}" env -u R_LIBS R_LIBS_USER="NULL" "$R_BIN" "${R_INSTALL_SCRIPT}" "${R_INSTALL_ARGS[@]}"
+  else
+    PATH="${R_ENV_BIN_DIR}:${PATH}" env -u R_LIBS R_LIBS_USER="NULL" "$R_BIN" "${R_INSTALL_SCRIPT}"
+  fi
 fi
 
 if [[ -f "$CONFIG_IN" ]]; then
@@ -151,22 +186,27 @@ if [[ -f "$CONFIG_IN" ]]; then
   cp "$CONFIG_IN" "$CONFIG_OUT"
   if [[ -n "${PY_BIN:-}" ]]; then
     if grep -q '^PYTHON_BIN=' "$CONFIG_OUT"; then
-      sed -i "s|^PYTHON_BIN=.*|PYTHON_BIN=\"${PY_BIN}\"|" "$CONFIG_OUT"
+      sed -i.bak "s|^PYTHON_BIN=.*|PYTHON_BIN=\"${PY_BIN}\"|" "$CONFIG_OUT" && rm -f "${CONFIG_OUT}.bak"
     else
       echo "PYTHON_BIN=\"${PY_BIN}\"" >> "$CONFIG_OUT"
     fi
   fi
   if [[ -n "${R_BIN:-}" ]]; then
     if grep -q '^R_BIN=' "$CONFIG_OUT"; then
-      sed -i "s|^R_BIN=.*|R_BIN=\"${R_BIN}\"|" "$CONFIG_OUT"
+      sed -i.bak "s|^R_BIN=.*|R_BIN=\"${R_BIN}\"|" "$CONFIG_OUT" && rm -f "${CONFIG_OUT}.bak"
     else
       echo "R_BIN=\"${R_BIN}\"" >> "$CONFIG_OUT"
     fi
   fi
   if grep -q '^MICROMAMBA_BIN=' "$CONFIG_OUT"; then
-    sed -i "s|^MICROMAMBA_BIN=.*|MICROMAMBA_BIN=\"${MAMBA_BIN}\"|" "$CONFIG_OUT"
+    sed -i.bak "s|^MICROMAMBA_BIN=.*|MICROMAMBA_BIN=\"${MAMBA_BIN}\"|" "$CONFIG_OUT" && rm -f "${CONFIG_OUT}.bak"
   else
     echo "MICROMAMBA_BIN=\"${MAMBA_BIN}\"" >> "$CONFIG_OUT"
+  fi
+  if grep -q '^R_LIBS_USER=' "$CONFIG_OUT"; then
+    sed -i.bak "s|^R_LIBS_USER=.*|R_LIBS_USER=\"NULL\"|" "$CONFIG_OUT" && rm -f "${CONFIG_OUT}.bak"
+  else
+    echo "R_LIBS_USER=\"NULL\"" >> "$CONFIG_OUT"
   fi
 else
   echo "[setup] Config template not found: ${CONFIG_IN} (skipping config write)"
