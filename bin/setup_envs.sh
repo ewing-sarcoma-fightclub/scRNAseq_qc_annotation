@@ -112,12 +112,42 @@ choose_env_file() {
 
 env_exists() {
   local env_name="$1"
-  "$MAMBA_BIN" env list | awk 'NF && $1 !~ /^#/ {print $1}' | grep -Fxq "$env_name"
+  local env_list candidate envs_root
+  env_list="$("$MAMBA_BIN" env list 2>/dev/null || true)"
+  if [[ -n "$env_list" ]] && awk 'NF && $1 !~ /^#/ {print $1}' <<<"$env_list" | grep -Fxq "$env_name"; then
+    return 0
+  fi
+  envs_root="${CONDA_ENVS_PATH%%:*}"
+  if [[ -z "$envs_root" && -n "${MAMBA_ROOT_PREFIX:-}" ]]; then
+    envs_root="${MAMBA_ROOT_PREFIX}/envs"
+  fi
+  candidate=""
+  if [[ -n "$envs_root" ]]; then
+    candidate="${envs_root}/${env_name}"
+  fi
+  [[ -n "$candidate" && -d "$candidate" ]]
 }
 
 env_prefix() {
   local env_name="$1"
-  "$MAMBA_BIN" env list | awk -v env="$env_name" 'NF && $1 !~ /^#/ {if ($1==env) print $NF}' | tail -n 1
+  local env_list from_list envs_root candidate
+  env_list="$("$MAMBA_BIN" env list 2>/dev/null || true)"
+  from_list="$(awk -v env="$env_name" 'NF && $1 !~ /^#/ {if ($1==env) print $NF}' <<<"$env_list" | tail -n 1)"
+  if [[ -n "$from_list" ]]; then
+    echo "$from_list"
+    return
+  fi
+  envs_root="${CONDA_ENVS_PATH%%:*}"
+  if [[ -z "$envs_root" && -n "${MAMBA_ROOT_PREFIX:-}" ]]; then
+    envs_root="${MAMBA_ROOT_PREFIX}/envs"
+  fi
+  candidate=""
+  if [[ -n "$envs_root" ]]; then
+    candidate="${envs_root}/${env_name}"
+  fi
+  if [[ -n "$candidate" && -d "$candidate" ]]; then
+    echo "$candidate"
+  fi
 }
 
 create_or_update() {
@@ -146,9 +176,19 @@ R_PREFIX=""
 PY_PREFIX=""
 if ! $SKIP_R; then
   R_PREFIX="$(env_prefix "$R_ENV_NAME")"
+  if [[ -z "$R_PREFIX" ]]; then
+    echo "[setup] Failed to locate R env prefix for: ${R_ENV_NAME}" >&2
+    echo "[setup] Set CONDA_ENVS_PATH or MAMBA_ROOT_PREFIX to a readable/writable path and retry." >&2
+    exit 1
+  fi
 fi
 if ! $SKIP_PY; then
   PY_PREFIX="$(env_prefix "$PY_ENV_NAME")"
+  if [[ -z "$PY_PREFIX" ]]; then
+    echo "[setup] Failed to locate Python env prefix for: ${PY_ENV_NAME}" >&2
+    echo "[setup] Set CONDA_ENVS_PATH or MAMBA_ROOT_PREFIX to a readable/writable path and retry." >&2
+    exit 1
+  fi
 fi
 
 if [[ -n "$R_PREFIX" ]]; then
