@@ -1946,9 +1946,14 @@ if (file.exists(grouping_file)) {
       }
 
       if (length(lineage_set) > 1) {
-        assigned_group[i] <- "Mixed/Doublet"
-        assigned_lineage[i] <- "Mixed/Doublet"
-        next
+        # Resolve multi-lineage with Azimuth dominance when it cleanly supports one lineage.
+        if (length(az_lineage_set) == 1 && (az_lineage_set[[1]] %in% lineage_set)) {
+          lineage_set <- az_lineage_set
+        } else {
+          assigned_group[i] <- "Mixed/Doublet"
+          assigned_lineage[i] <- "Mixed/Doublet"
+          next
+        }
       }
 
       if (length(lineage_set) == 0) {
