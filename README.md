@@ -1,5 +1,9 @@
 # Ewing Sarcoma scRNA-seq Pipeline
 
+## Author
+
+- [itismeangie](https://github.com/itismeangie)
+
 ## Quick Install (recommended)
 1. Clone the repo:
 ```bash
