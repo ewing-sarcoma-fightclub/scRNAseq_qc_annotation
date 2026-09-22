@@ -2,11 +2,11 @@
 
 R, Python and Bash workflows for quality control, cell-type annotation and integration of Ewing sarcoma single-cell RNA-seq data.
 
-The pipeline brings several analysis stages into one configurable workflow: distinguishing cell-containing droplets from background, correcting ambient RNA, detecting likely doublets, and preparing annotated Seurat objects for comparing cell populations across samples. Cell labels and QC decisions still require scientific review.
+The pipeline identifies cell-containing droplets, corrects ambient RNA contamination, detects doublets and produces annotated Seurat objects for comparing cell populations across samples.
 
 **Author:** [Angelina Yershova](https://github.com/itismeangie) · [LinkedIn](https://www.linkedin.com/in/angelina-yershova/)
 
-## At a glance
+## Workflow
 
 | Stage | Implementation | Purpose |
 |---|---|---|
@@ -28,15 +28,13 @@ flowchart LR
   G --> H[Annotation and optional integration]
 ```
 
-This repository demonstrates multi-tool orchestration, configurable QC, R/Bioconductor analysis, Python utilities and environment setup. It is research code; it is not a clinically validated classifier.
-
-## Inputs and scope
+## Inputs
 
 - Start from FASTQs, existing Cell Ranger outputs, or compatible public count matrices.
-- The standard matrix workflow requires **both raw and filtered** gene-by-barcode matrices for each sample. A filtered matrix alone is insufficient for the EmptyDrops/SoupX workflow.
+- EmptyDrops and SoupX require **both raw and filtered** gene-by-barcode matrices for each sample.
 - DropletQC requires a compatible BAM and index. For matrix-only inputs, set `SEURAT_FINAL_REQUIRE_DROPLETQC=false` in the local configuration.
-- `bin/prepare_geo_primary.sh` is a dataset-specific preparation helper for GEO **GSE277083** and its primary-sample metadata. It is not a general GEO importer.
-- Cell Ranger, reference genomes, input datasets and optional external references are obtained separately. A full run can require substantial memory, disk space and downloads.
+- `bin/prepare_geo_primary.sh` downloads and prepares GEO **GSE277083** and its primary-sample metadata.
+- Install Cell Ranger separately and download the reference genome, input datasets and any annotation references needed for the analysis.
 
 
 ## Quick Install (recommended)
@@ -77,7 +75,7 @@ micromamba run -n ewing-scrna-py bash ./bin/prepare_geo_primary.sh
 ./bin/run_all.sh --skip-cellranger --cellranger-root ./outputs/cellranger --qc-out ./outputs/qc --config ./env/config.local.env
 ```
 
-The preparation command downloads the GSE277083 data. Its optional `--clean` flag deletes the selected output directory before rebuilding it; omit it unless that reset is intended. If using mamba or conda, substitute that command for micromamba.
+The preparation command downloads GSE277083. Its optional `--clean` flag deletes and rebuilds the selected output directory. Replace `micromamba` with `mamba` or `conda` if needed.
 
 ## R Dependency Order
 R dependencies are installed by `r/install_pipeline_packages.R` in this order:
@@ -165,21 +163,22 @@ Run QC entrypoint directly:
 - `env/config.local.env` is preferred over `env/config.env`.
 - If `AMBIQUANT_REPO` is empty, AmbiQuant steps are skipped.
 
-## Reproducibility and validation limits
+## Tests
 
-Linux environment exports and macOS environment definitions are included. Some R packages are installed from GitHub without a fixed commit, so these files do not fully freeze every dependency. Record package versions, configuration and reference versions with each analysis.
-
-Offline orchestration regression checks run without sequencing data or the R analysis packages:
+The tests check configuration passed to analysis processes, resume behavior and environment setup with paths containing spaces. They use temporary files and stand-ins for Rscript and micromamba, so they run without sequencing data or R packages:
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-These checks cover configuration propagation to child processes, resume controls and environment-path setup. They do **not** run Cell Ranger, Seurat or the full biological workflow, benchmark annotation accuracy, or establish clinical performance. This repository does not include a small end-to-end demonstration dataset or a validated example-results report.
+## Analysis settings
 
-QC thresholds, reference selection, doublet assumptions and integration choices must be reviewed for each dataset. Automated annotations are hypotheses to inspect using marker expression and biological context. Use a fresh output directory when changing analysis settings: resume mode can reuse existing files.
+- Set QC thresholds, annotation references, doublet parameters and integration options in `env/config.local.env` for each dataset.
+- Check cell-type assignments against marker expression.
+- Use a fresh output directory when changing analysis settings; resume mode reuses existing files.
+- Record package and reference versions with each run. Linux environment exports and macOS environment definitions are included; R packages installed from GitHub use the available version at installation time.
 
-Keep downloaded inputs, generated outputs and local configuration out of version control. Only use datasets you are authorized to process and share.
+Downloaded inputs, generated outputs and local configuration are excluded from version control by `.gitignore`.
 
 ## Related work
 
