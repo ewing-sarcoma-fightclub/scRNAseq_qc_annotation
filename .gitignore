@@ -5,3 +5,11 @@ Rplots.pdf
 
 # Local config overrides
 env/config.local.env
+
+# Downloaded sequencing data, generated analyses, and local runtime files
+inputs/
+outputs/
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store

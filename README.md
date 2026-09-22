@@ -1,8 +1,43 @@
-# Ewing Sarcoma scRNA-seq Pipeline
+# Ewing Sarcoma Single-Cell RNA-seq Analysis
 
-## Author
+R, Python and Bash workflows for quality control, cell-type annotation and integration of Ewing sarcoma single-cell RNA-seq data.
 
-- [itismeangie](https://github.com/itismeangie)
+The pipeline brings several analysis stages into one configurable workflow: distinguishing cell-containing droplets from background, correcting ambient RNA, detecting likely doublets, and preparing annotated Seurat objects for comparing cell populations across samples. Cell labels and QC decisions still require scientific review.
+
+**Author:** [Angelina Yershova](https://github.com/itismeangie) · [LinkedIn](https://www.linkedin.com/in/angelina-yershova/)
+
+## At a glance
+
+| Stage | Implementation | Purpose |
+|---|---|---|
+| FASTQ processing (optional) | Cell Ranger | Generate gene-by-barcode count matrices |
+| Droplet QC | EmptyDrops; optional BAM-dependent DropletQC | Assess droplets and damaged-cell signals |
+| Ambient RNA correction | SoupX | Estimate and correct background RNA contamination |
+| Doublet detection | DoubletFinder | Flag likely multiplets before downstream analysis |
+| Annotation | Seurat, marker scoring, AUCell and optional Azimuth references | Support cell-type and Ewing-associated state interpretation |
+| Integration | Seurat | Produce merged and optionally integrated objects |
+
+```mermaid
+flowchart LR
+  A[FASTQ files] --> B[Cell Ranger]
+  B --> C[Raw and filtered matrices]
+  D[Existing or public matrices] --> C
+  C --> E[EmptyDrops and SoupX]
+  E --> F[DoubletFinder and optional DropletQC]
+  F --> G[Seurat QC and subsetting]
+  G --> H[Annotation and optional integration]
+```
+
+This repository demonstrates multi-tool orchestration, configurable QC, R/Bioconductor analysis, Python utilities and environment setup. It is research code; it is not a clinically validated classifier.
+
+## Inputs and scope
+
+- Start from FASTQs, existing Cell Ranger outputs, or compatible public count matrices.
+- The standard matrix workflow requires **both raw and filtered** gene-by-barcode matrices for each sample. A filtered matrix alone is insufficient for the EmptyDrops/SoupX workflow.
+- DropletQC requires a compatible BAM and index. For matrix-only inputs, set `SEURAT_FINAL_REQUIRE_DROPLETQC=false` in the local configuration.
+- `bin/prepare_geo_primary.sh` is a dataset-specific preparation helper for GEO **GSE277083** and its primary-sample metadata. It is not a general GEO importer.
+- Cell Ranger, reference genomes, input datasets and optional external references are obtained separately. A full run can require substantial memory, disk space and downloads.
+
 
 ## Quick Install (recommended)
 1. Clone the repo:
@@ -36,9 +71,13 @@ Set at minimum:
 
 Matrix-only input (no FASTQs, no BAM):
 ```bash
-./bin/prepare_geo_primary.sh --clean
+# Use the Python environment created above; the helper needs pandas and numpy.
+micromamba run -n ewing-scrna-py bash ./bin/prepare_geo_primary.sh
+# First set SEURAT_FINAL_REQUIRE_DROPLETQC=false in env/config.local.env.
 ./bin/run_all.sh --skip-cellranger --cellranger-root ./outputs/cellranger --qc-out ./outputs/qc --config ./env/config.local.env
 ```
+
+The preparation command downloads the GSE277083 data. Its optional `--clean` flag deletes the selected output directory before rebuilding it; omit it unless that reset is intended. If using mamba or conda, substitute that command for micromamba.
 
 ## R Dependency Order
 R dependencies are installed by `r/install_pipeline_packages.R` in this order:
@@ -125,3 +164,28 @@ Run QC entrypoint directly:
 - Cell Ranger is proprietary and must be installed separately.
 - `env/config.local.env` is preferred over `env/config.env`.
 - If `AMBIQUANT_REPO` is empty, AmbiQuant steps are skipped.
+
+## Reproducibility and validation limits
+
+Linux environment exports and macOS environment definitions are included. Some R packages are installed from GitHub without a fixed commit, so these files do not fully freeze every dependency. Record package versions, configuration and reference versions with each analysis.
+
+Offline orchestration regression checks run without sequencing data or the R analysis packages:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+These checks cover configuration propagation to child processes, resume controls and environment-path setup. They do **not** run Cell Ranger, Seurat or the full biological workflow, benchmark annotation accuracy, or establish clinical performance. This repository does not include a small end-to-end demonstration dataset or a validated example-results report.
+
+QC thresholds, reference selection, doublet assumptions and integration choices must be reviewed for each dataset. Automated annotations are hypotheses to inspect using marker expression and biological context. Use a fresh output directory when changing analysis settings: resume mode can reuse existing files.
+
+Keep downloaded inputs, generated outputs and local configuration out of version control. Only use datasets you are authorized to process and share.
+
+## Related work
+
+- [Automated colony formation assay image analysis](https://github.com/ewing-sarcoma-fightclub/analyse-CFA-automatically): Python image quantification with visual QC.
+- [SF3B4 and chromosome 1q gain](https://github.com/itismeangie/SF3B4-as-1q-gain-driver): cancer-genomics analysis workflows.
+
+## License
+
+Repository code is provided under the [MIT License](LICENSE). External datasets, reference annotations and third-party tools retain their own terms.
