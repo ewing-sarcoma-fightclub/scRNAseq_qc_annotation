@@ -1,4 +1,4 @@
-"""Offline orchestration checks; these do not validate biological results."""
+"""Tests for configuration propagation, resume behavior and environment setup."""
 
 import json
 import os
