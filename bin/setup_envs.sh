@@ -117,7 +117,8 @@ env_exists() {
   if [[ -n "$env_list" ]] && awk 'NF && $1 !~ /^#/ {print $1}' <<<"$env_list" | grep -Fxq "$env_name"; then
     return 0
   fi
-  envs_root="${CONDA_ENVS_PATH%%:*}"
+  envs_root="${CONDA_ENVS_PATH:-}"
+  envs_root="${envs_root%%:*}"
   if [[ -z "$envs_root" && -n "${MAMBA_ROOT_PREFIX:-}" ]]; then
     envs_root="${MAMBA_ROOT_PREFIX}/envs"
   fi
@@ -132,12 +133,13 @@ env_prefix() {
   local env_name="$1"
   local env_list from_list envs_root candidate
   env_list="$("$MAMBA_BIN" env list 2>/dev/null || true)"
-  from_list="$(awk -v env="$env_name" 'NF && $1 !~ /^#/ {if ($1==env) print $NF}' <<<"$env_list" | tail -n 1)"
+  from_list="$(awk -v env="$env_name" 'NF && $1 !~ /^#/ && $1==env {sub(/^[^\/]*/, ""); print}' <<<"$env_list" | tail -n 1)"
   if [[ -n "$from_list" ]]; then
     echo "$from_list"
     return
   fi
-  envs_root="${CONDA_ENVS_PATH%%:*}"
+  envs_root="${CONDA_ENVS_PATH:-}"
+  envs_root="${envs_root%%:*}"
   if [[ -z "$envs_root" && -n "${MAMBA_ROOT_PREFIX:-}" ]]; then
     envs_root="${MAMBA_ROOT_PREFIX}/envs"
   fi

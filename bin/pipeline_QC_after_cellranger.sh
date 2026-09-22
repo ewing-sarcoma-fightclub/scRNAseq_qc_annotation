@@ -53,8 +53,17 @@ if [[ -f "${CONFIG_FILE}" ]]; then
   CONFIG_FILE="$(cd -- "$(dirname -- "${CONFIG_FILE}")" && pwd)/$(basename -- "${CONFIG_FILE}")"
 fi
 if [[ -f "${CONFIG_FILE}" ]]; then
+  # R and child shell processes read analysis options from their environment.
+  # Preserve a caller's existing allexport setting after loading the config.
+  CONFIG_ALLEXPORT_WAS_SET=false
+  [[ "$-" == *a* ]] && CONFIG_ALLEXPORT_WAS_SET=true
+  set -a
   # shellcheck source=/dev/null
   source "${CONFIG_FILE}"
+  if [[ "${CONFIG_ALLEXPORT_WAS_SET}" != true ]]; then
+    set +a
+  fi
+  unset CONFIG_ALLEXPORT_WAS_SET
 fi
 
 # ---- configure ----
